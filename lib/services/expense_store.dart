@@ -160,7 +160,8 @@ class ExpenseStore extends ChangeNotifier {
   List<YearlyTotal> yearlyTotals() {
     final totals = <int, double>{};
     for (final expense in _expenses) {
-      totals[expense.date.year] = (totals[expense.date.year] ?? 0) + expense.amount;
+      final year = expense.date.year;
+      totals[year] = (totals[year] ?? 0) + expense.amount;
     }
     final years = totals.keys.toList()..sort((a, b) => b.compareTo(a));
     return [
