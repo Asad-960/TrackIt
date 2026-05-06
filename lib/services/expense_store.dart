@@ -145,18 +145,31 @@ class ExpenseStore extends ChangeNotifier {
   }
 
   List<MonthlyTotal> monthlyTotals() {
-    final totals = <String, double>{};
-    final months = <String, DateTime>{};
-    for (final expense in _expenses) {
-      final key = _monthKey(expense.date);
-      totals[key] = (totals[key] ?? 0) + expense.amount;
-      months[key] = DateTime(expense.date.year, expense.date.month);
+    if (_expenses.isEmpty) {
+      return [];
     }
-    final sortedKeys = totals.keys.toList()
-      ..sort((a, b) => months[b]!.compareTo(months[a]!));
-    return [
-      for (final key in sortedKeys) MonthlyTotal(months[key]!, totals[key]!)
-    ];
+
+    final oldestExpense = _expenses.reduce(
+      (current, candidate) =>
+          candidate.date.isBefore(current.date) ? candidate : current,
+    );
+    final startMonth = DateTime(oldestExpense.date.year, oldestExpense.date.month);
+    final currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
+
+    final history = <MonthlyTotal>[];
+    for (var month = currentMonth;
+        !month.isBefore(startMonth);
+        month = DateTime(month.year, month.month - 1)) {
+      final total = _expenses
+          .where(
+            (expense) =>
+                expense.date.year == month.year &&
+                expense.date.month == month.month,
+          )
+          .fold<double>(0, (sum, expense) => sum + expense.amount);
+      history.add(MonthlyTotal(month, total));
+    }
+    return history;
   }
 
   List<YearlyTotal> yearlyTotals() {
@@ -201,7 +214,4 @@ class ExpenseStore extends ChangeNotifier {
     });
   }
 
-  String _monthKey(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}';
-  }
 }

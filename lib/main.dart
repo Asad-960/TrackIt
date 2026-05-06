@@ -8,11 +8,64 @@ import 'models/expense.dart';
 import 'services/expense_store.dart';
 
 final ThemeData _appTheme = ThemeData(
-  colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: const Color(0xFF0F766E),
+    brightness: Brightness.light,
+  ),
   useMaterial3: true,
+  scaffoldBackgroundColor: const Color(0xFFF7F8FA),
+  appBarTheme: const AppBarTheme(
+    centerTitle: false,
+    elevation: 0,
+    scrolledUnderElevation: 0,
+  ),
+  cardTheme: CardThemeData(
+    elevation: 0,
+    margin: EdgeInsets.zero,
+    color: Colors.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(24),
+      side: const BorderSide(color: Color(0xFFE7EAF0)),
+    ),
+  ),
+  filledButtonTheme: FilledButtonThemeData(
+    style: FilledButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    ),
+  ),
+  outlinedButtonTheme: OutlinedButtonThemeData(
+    style: OutlinedButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    ),
+  ),
+  navigationBarTheme: NavigationBarThemeData(
+    backgroundColor: Colors.white,
+    indicatorColor: const Color(0xFFCCEFEA),
+    labelTextStyle: WidgetStateProperty.resolveWith(
+      (states) => const TextStyle(fontWeight: FontWeight.w600),
+    ),
+  ),
+  inputDecorationTheme: InputDecorationTheme(
+    filled: true,
+    fillColor: Colors.white,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: const BorderSide(color: Color(0xFFD8DEE9)),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: const BorderSide(color: Color(0xFFD8DEE9)),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: const BorderSide(color: Color(0xFF0F766E), width: 1.5),
+    ),
+  ),
 );
 
-const DateTime _firstAllowedDate = DateTime(2019, 1, 1);
+final DateTime _firstAllowedDate = DateTime(2019, 1, 1);
 final Random _idRandom = Random();
 
 void main() {
@@ -37,6 +90,7 @@ class TrackItApp extends StatelessWidget {
           return MaterialApp(
             title: 'TrackIt',
             theme: _appTheme,
+            debugShowCheckedModeBanner: false,
             home: const LoadingScreen(),
           );
         }
@@ -45,6 +99,7 @@ class TrackItApp extends StatelessWidget {
           child: MaterialApp(
             title: 'TrackIt',
             theme: _appTheme,
+            debugShowCheckedModeBanner: false,
             home: const HomeShell(),
           ),
         );
@@ -57,8 +112,8 @@ class AppStateScope extends InheritedNotifier<ExpenseStore> {
   const AppStateScope({
     super.key,
     required ExpenseStore notifier,
-    required Widget child,
-  }) : super(notifier: notifier, child: child);
+    required super.child,
+  }) : super(notifier: notifier);
 
   static ExpenseStore of(BuildContext context) {
     final scope =
@@ -102,19 +157,43 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = const [
-      ExpensesPage(),
-      ReportsPage(),
-      BackupPage(),
-      SettingsPage(),
-    ];
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
-        title: Text(_titles[_currentIndex]),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_titles[_currentIndex]),
+            Text(
+              _titles[_currentIndex] == 'Expenses'
+                  ? 'Track today and review the full timeline.'
+                  : _titles[_currentIndex] == 'Reports'
+                      ? 'Scan month-by-month history and yearly totals.'
+                      : _titles[_currentIndex] == 'Backup'
+                          ? 'Export or restore your local data.'
+                          : 'Personalize the app to your preference.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF4FBF9), Color(0xFFF7F8FA)],
+          ),
+        ),
+        child: IndexedStack(
+          index: _currentIndex,
+          children: const [
+            ExpensesPage(),
+            ReportsPage(),
+            BackupPage(),
+            SettingsPage(),
+          ],
+        ),
       ),
       floatingActionButton: _currentIndex == 0
           ? FloatingActionButton(
@@ -193,8 +272,13 @@ class _ExpensesPageState extends State<ExpensesPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Daily total: ${formatAmount(total, store.settings.currencySymbol)}',
+                    'Daily total',
                     style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    formatAmount(total, store.settings.currencySymbol),
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ],
               ),
@@ -208,7 +292,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
                   : ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemCount: expenses.length,
-                      separatorBuilder: (_, __) =>
+                        separatorBuilder: (context, _) =>
                           const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final expense = expenses[index];
@@ -341,50 +425,151 @@ class ReportsPage extends StatelessWidget {
         final now = DateTime.now();
         final monthTotal = store.totalForMonth(now);
         final yearTotal = store.totalForYear(now.year);
+        final trackedMonths = monthlyTotals.where((entry) => entry.total > 0).length;
+        final totalTracked = monthlyTotals.fold<double>(0, (sum, entry) => sum + entry.total);
         return ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
-            _SummaryCard(
-              title: 'This Month',
-              subtitle: formatMonth(now),
-              total: formatAmount(monthTotal, store.settings.currencySymbol),
+            Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0F766E), Color(0xFF14B8A6)],
+                ),
+                borderRadius: BorderRadius.circular(28),
+              ),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tracking overview',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${monthlyTotals.isEmpty ? 0 : monthlyTotals.length} months in the timeline',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SummaryCard(
+                          title: 'This Month',
+                          subtitle: formatMonth(now),
+                          total: formatAmount(
+                            monthTotal,
+                            store.settings.currencySymbol,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _SummaryCard(
+                          title: 'This Year',
+                          subtitle: now.year.toString(),
+                          total: formatAmount(
+                            yearTotal,
+                            store.settings.currencySymbol,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 12),
-            _SummaryCard(
-              title: 'This Year',
-              subtitle: now.year.toString(),
-              total: formatAmount(yearTotal, store.settings.currencySymbol),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _MiniStat(
+                    label: 'Tracked months',
+                    value: trackedMonths.toString(),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MiniStat(
+                    label: 'Lifetime total',
+                    value: formatAmount(
+                      totalTracked,
+                      store.settings.currencySymbol,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Text(
               'Monthly history',
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             if (monthlyTotals.isEmpty)
               const _EmptyState(
                 title: 'No history yet',
                 message: 'Add expenses to see monthly totals.',
               )
             else
-              ...monthlyTotals.map(
-                (entry) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(formatMonth(entry.month)),
-                  trailing: Text(
-                    formatAmount(
-                      entry.total,
-                      store.settings.currencySymbol,
+              ..._historySections(monthlyTotals).map(
+                (section) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            section.year.toString(),
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 12),
+                          ...section.months.map(
+                            (entry) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: entry.total == 0
+                                      ? const Color(0xFFF5F7FA)
+                                      : const Color(0xFFEAF8F5),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: ListTile(
+                                  title: Text(formatMonth(entry.month)),
+                                  subtitle: entry.total == 0
+                                      ? const Text('No spending recorded')
+                                      : const Text('Activity recorded this month'),
+                                  trailing: Text(
+                                    formatAmount(
+                                      entry.total,
+                                      store.settings.currencySymbol,
+                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             Text(
               'Yearly totals',
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             if (yearlyTotals.isEmpty)
               const _EmptyState(
                 title: 'No yearly totals yet',
@@ -392,13 +577,15 @@ class ReportsPage extends StatelessWidget {
               )
             else
               ...yearlyTotals.map(
-                (entry) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(entry.year.toString()),
-                  trailing: Text(
-                    formatAmount(
-                      entry.total,
-                      store.settings.currencySymbol,
+                (entry) => Card(
+                  child: ListTile(
+                    title: Text(entry.year.toString()),
+                    subtitle: const Text('Yearly spending total'),
+                    trailing: Text(
+                      formatAmount(
+                        entry.total,
+                        store.settings.currencySymbol,
+                      ),
                     ),
                   ),
                 ),
@@ -408,6 +595,49 @@ class ReportsPage extends StatelessWidget {
       },
     );
   }
+}
+
+class _MiniStat extends StatelessWidget {
+  const _MiniStat({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 8),
+            Text(value, style: Theme.of(context).textTheme.titleMedium),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HistorySection {
+  const _HistorySection({required this.year, required this.months});
+
+  final int year;
+  final List<MonthlyTotal> months;
+}
+
+List<_HistorySection> _historySections(List<MonthlyTotal> totals) {
+  final sections = <_HistorySection>[];
+  for (final entry in totals) {
+    if (sections.isEmpty || sections.last.year != entry.month.year) {
+      sections.add(_HistorySection(year: entry.month.year, months: [entry]));
+    } else {
+      sections.last.months.add(entry);
+    }
+  }
+  return sections;
 }
 
 class _SummaryCard extends StatelessWidget {
@@ -424,6 +654,7 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: Colors.white.withValues(alpha: 0.92),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -432,12 +663,15 @@ class _SummaryCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
                 ],
               ),
             ),
-            Text(total, style: Theme.of(context).textTheme.headlineSmall),
+            Text(total, style: Theme.of(context).textTheme.titleLarge),
           ],
         ),
       ),
@@ -663,7 +897,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<BackupProvider>(
-              value: _backupProvider,
+              initialValue: _backupProvider,
               decoration: const InputDecoration(
                 labelText: 'Backup provider',
                 border: OutlineInputBorder(),
@@ -715,6 +949,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     backupProvider: _backupProvider ?? BackupProvider.local,
                   ),
                 );
+                if (!context.mounted) {
+                  return;
+                }
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Settings saved.')),
                 );
@@ -853,10 +1090,10 @@ class _ExpenseFormPageState extends State<ExpenseFormPage> {
               ),
               const SizedBox(height: 16),
               FilledButton(
-              onPressed: () async {
-                if (!_formKey.currentState!.validate()) {
-                  return;
-                }
+                onPressed: () async {
+                  if (!_formKey.currentState!.validate()) {
+                    return;
+                  }
                   final amount = double.tryParse(_amountController.text.trim());
                   if (amount == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -877,6 +1114,9 @@ class _ExpenseFormPageState extends State<ExpenseFormPage> {
                     await store.addExpense(expense);
                   } else {
                     await store.updateExpense(expense);
+                  }
+                  if (!context.mounted) {
+                    return;
                   }
                   Navigator.of(context).pop();
                 },
