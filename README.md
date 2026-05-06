@@ -1,17 +1,31 @@
-# trackit
+# TrackIt
 
-A new Flutter project.
+TrackIt is an offline-first expense tracker built with Flutter. Add daily
+expenses by item name and amount, review monthly and yearly reports, and export
+or restore backups using a portable JSON payload.
+
+## Features
+
+- Daily expense entry with item name, amount, category, notes, and date.
+- Monthly and yearly totals with previous month history.
+- Manual backup and restore via JSON (clipboard export/import).
+- Settings for currency symbol, locale tag, and backup provider preference.
+
+## Assumptions
+
+- Storage is on-device (offline-first) using local preferences.
+- Cloud backup is optional and shown as a placeholder until configured.
+- Currency formatting uses a user-supplied symbol rather than locale-aware
+  formatting.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. Install Flutter and its platform toolchains.
+2. Fetch dependencies:
+   ```sh
+   flutter pub get
+   ```
+3. Run the app:
+   ```sh
+   flutter run
+   ```

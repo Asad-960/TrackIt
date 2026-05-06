@@ -8,23 +8,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trackit/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Shows empty state on first launch', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.pumpWidget(TrackItApp(localeTag: 'en-US'));
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
+    expect(find.text('No expenses yet'), findsOneWidget);
+    expect(find.text('Tap + to add your first expense for the day.'),
+        findsOneWidget);
+  });
+
+  testWidgets('Adds a new expense from the form', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(TrackItApp(localeTag: 'en-US'));
+    await tester.pumpAndSettle();
+
     await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Item name'),
+      'Coffee',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Amount'),
+      '4.50',
+    );
+
+    await tester.tap(find.text('Add expense'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Coffee'), findsOneWidget);
+    expect(find.text('\$4.50'), findsOneWidget);
   });
 }
