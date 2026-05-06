@@ -146,7 +146,7 @@ class ExpenseStore extends ChangeNotifier {
     final totals = <String, double>{};
     final months = <String, DateTime>{};
     for (final expense in _expenses) {
-      final key = '${expense.date.year}-${expense.date.month.toString().padLeft(2, '0')}';
+      final key = _monthKey(expense.date);
       totals[key] = (totals[key] ?? 0) + expense.amount;
       months[key] = DateTime(expense.date.year, expense.date.month);
     }
@@ -196,5 +196,9 @@ class ExpenseStore extends ChangeNotifier {
       }
       return a.name.toLowerCase().compareTo(b.name.toLowerCase());
     });
+  }
+
+  String _monthKey(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}';
   }
 }

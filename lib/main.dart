@@ -5,6 +5,13 @@ import 'models/app_settings.dart';
 import 'models/expense.dart';
 import 'services/expense_store.dart';
 
+final ThemeData _appTheme = ThemeData(
+  colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+  useMaterial3: true,
+);
+
+const DateTime _firstAllowedDate = DateTime(2019, 1, 1);
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   final localeTag =
@@ -26,10 +33,7 @@ class TrackItApp extends StatelessWidget {
         if (!snapshot.hasData) {
           return MaterialApp(
             title: 'TrackIt',
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-              useMaterial3: true,
-            ),
+            theme: _appTheme,
             home: const LoadingScreen(),
           );
         }
@@ -37,10 +41,7 @@ class TrackItApp extends StatelessWidget {
           notifier: snapshot.data!,
           child: MaterialApp(
             title: 'TrackIt',
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-              useMaterial3: true,
-            ),
+            theme: _appTheme,
             home: const HomeShell(),
           ),
         );
@@ -304,7 +305,7 @@ class _DateSelector extends StatelessWidget {
               final picked = await showDatePicker(
                 context: context,
                 initialDate: selectedDate,
-                firstDate: DateTime(2019),
+                firstDate: _firstAllowedDate,
                 lastDate: DateTime.now().add(const Duration(days: 365)),
               );
               if (picked != null) {
@@ -835,7 +836,7 @@ class _ExpenseFormPageState extends State<ExpenseFormPage> {
                     final picked = await showDatePicker(
                       context: context,
                       initialDate: _selectedDate,
-                      firstDate: DateTime(2019),
+                      firstDate: _firstAllowedDate,
                       lastDate: DateTime.now().add(const Duration(days: 365)),
                     );
                     if (picked != null) {
@@ -853,7 +854,15 @@ class _ExpenseFormPageState extends State<ExpenseFormPage> {
                 if (!_formKey.currentState!.validate()) {
                   return;
                 }
-                  final amount = double.parse(_amountController.text.trim());
+                  final amount = double.tryParse(_amountController.text.trim());
+                  if (amount == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Enter a valid amount.'),
+                      ),
+                    );
+                    return;
+                  }
                   final expense = (widget.expense ?? _newExpense()).copyWith(
                     name: _nameController.text.trim(),
                     amount: amount,
