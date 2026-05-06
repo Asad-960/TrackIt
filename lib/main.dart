@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -11,6 +13,7 @@ final ThemeData _appTheme = ThemeData(
 );
 
 const DateTime _firstAllowedDate = DateTime(2019, 1, 1);
+final Random _idRandom = Random();
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -888,7 +891,7 @@ class _ExpenseFormPageState extends State<ExpenseFormPage> {
 
   Expense _newExpense() {
     return Expense(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      id: 'exp_${DateTime.now().microsecondsSinceEpoch}_${_idRandom.nextInt(100000)}',
       name: _nameController.text.trim(),
       amount: 0,
       date: _selectedDate,

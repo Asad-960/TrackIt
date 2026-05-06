@@ -54,7 +54,8 @@ class ExpenseStore extends ChangeNotifier {
             .map(Expense.fromJson)
             .toList();
         _sortExpenses();
-      } catch (_) {
+      } catch (error) {
+        debugPrint('Failed to load expenses: $error');
         _expenses = [];
       }
     }
@@ -65,7 +66,8 @@ class ExpenseStore extends ChangeNotifier {
         _settings = AppSettings.fromJson(
           (jsonDecode(rawSettings) as Map).cast<String, dynamic>(),
         );
-      } catch (_) {
+      } catch (error) {
+        debugPrint('Failed to load settings: $error');
         _settings = AppSettings.defaults(localeTag: localeTag);
       }
     } else {
